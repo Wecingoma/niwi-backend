@@ -22,7 +22,7 @@ return [
     'allowed_origins' => array_filter(
         array_map(
             'trim',
-            explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:5174'))
+            explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:5174,https://winy-tech.citederefugekintambo.org/api,https://niwy.tech,www.niwy.tech,http://niwy.tech/'))
         )
     ),
 

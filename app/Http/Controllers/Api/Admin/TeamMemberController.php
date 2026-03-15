@@ -101,67 +101,70 @@ class TeamMemberController extends Controller
     }
 
     public function update(Request $request, TeamMember $teamMember): JsonResponse
-    {
-        DB::beginTransaction();
+{
+    DB::beginTransaction();
 
-        try {
-            $validated = $request->validate([
-                'name'        => 'sometimes|string|max:255',
-                'role'        => 'sometimes|string|max:255',
-                'theme'       => 'nullable|string|max:50',
-                'reverse'     => 'nullable|boolean',
-                'summary'     => 'nullable|array',
-                'summary.*'   => 'string',
-                'skills'      => 'nullable|string',
-                'contact'     => 'nullable|string',
-                'is_carousel' => 'nullable|boolean',
-                'socials'     => 'nullable|array',
-                'socials.*'   => 'string',
-                'sort_order'  => 'nullable|integer|min:0',
-                'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            ]);
+    try {
+        $validated = $request->validate([
+            'name'        => 'sometimes|string|max:255',
+            'role'        => 'sometimes|string|max:255',
+            'theme'       => 'nullable|string|max:50',
+            'reverse'     => 'nullable|boolean',
+            'summary'     => 'nullable|array',
+            'summary.*'   => 'string',
+            'skills'      => 'nullable|string',
+            'contact'     => 'nullable|string',
+            'is_carousel' => 'nullable|boolean',
+            'socials'     => 'nullable|array',
+            'socials.*'   => 'string',
+            'sort_order'  => 'nullable|integer|min:0',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
 
-            // Upload nouvelle image
-            if ($request->hasFile('image')) {
-                // Supprimer l’ancienne
-                if ($teamMember->image && Storage::disk('public')->exists($teamMember->image)) {
-                    Storage::disk('public')->delete($teamMember->image);
-                }
-
-                $image     = $request->file('image');
-                $extension = $image->getClientOriginalExtension();
-                $safeName  = Str::slug($validated['name'] ?? $teamMember->name);
-                $fileName  = $safeName . '_' . time() . '.' . $extension;
-
-                $storagePath = "team-members/{$teamMember->id}";
-                Storage::disk('public')->makeDirectory($storagePath);
-
-                $validated['image'] = $image->storeAs($storagePath, $fileName, 'public');
+        // --- Gestion de l'image ---
+        if ($request->hasFile('image')) {
+            // Supprimer l’ancienne si elle existe
+            if (!empty($teamMember->image) && Storage::disk('public')->exists($teamMember->image)) {
+                Storage::disk('public')->delete($teamMember->image);
             }
 
-            $teamMember->update($validated);
+            $image = $request->file('image');
 
-            DB::commit();
+            $safeName  = Str::slug($validated['name'] ?? $teamMember->name ?? 'team-member');
+            $fileName  = $safeName . '_' . time() . '.' . $image->getClientOriginalExtension();
+            $storagePath = "team-members/{$teamMember->id}";
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Membre mis à jour avec succès',
-                'data'    => $teamMember
-            ]);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            Log::error('UPDATE TEAM MEMBER ERROR', [
-                'message' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la mise à jour'
-            ], 500);
+            Storage::disk('public')->makeDirectory($storagePath);
+            $validated['image'] = $image->storeAs($storagePath, $fileName, 'public');
         }
+
+        // --- Update sécurisé ---
+        $teamMember->fill($validated);
+        $teamMember->save();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Membre mis à jour avec succès',
+            'data'    => $teamMember
+        ]);
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Log::error('UPDATE TEAM MEMBER ERROR', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour',
+            'error'   => $e->getMessage()
+        ], 500);
     }
+}
 
     public function destroy(TeamMember $teamMember): JsonResponse
     {
