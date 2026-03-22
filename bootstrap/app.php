@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'user' => \App\Http\Middleware\EnsureUser::class,
+            'contact.sender' => \App\Http\Middleware\EnsureAuthenticatedContactSender::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

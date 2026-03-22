@@ -5,8 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AboutContentController;
 use App\Http\Controllers\Api\ContactInfoController;
 use App\Http\Controllers\Api\ContactMessageController;
+use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\ExpertiseItemController;
 use App\Http\Controllers\Api\HeroSlideController;
+use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\PortfolioProjectController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\ServiceController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Api\Admin\AboutContentController as AdminAboutContentCo
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\ContactInfoController as AdminContactInfoController;
 use App\Http\Controllers\Api\Admin\ContactMessageController as AdminContactMessageController;
+use App\Http\Controllers\Api\Admin\ConversationController as AdminConversationController;
 use App\Http\Controllers\Api\Admin\ExpertiseItemController as AdminExpertiseItemController;
 use App\Http\Controllers\Api\Admin\HeroSlideController as AdminHeroSlideController;
 use App\Http\Controllers\Api\Admin\PortfolioProjectController as AdminPortfolioProjectController;
@@ -37,8 +40,20 @@ Route::get('/expertise-items', [ExpertiseItemController::class, 'index']);
 Route::get('/team-members', [TeamMemberController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
 Route::get('/contact-info', [ContactInfoController::class, 'show']);
-Route::post('/contact-messages', [ContactMessageController::class, 'store']);
+Route::post('/contact-messages', [ContactMessageController::class, 'store'])->middleware(['auth:sanctum', 'contact.sender']);
 Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/login', [LoginController::class, 'login']);
+
+Route::middleware(['auth:sanctum', 'user'])->group(function () {
+    Route::get('/me', [LoginController::class, 'me']);
+    Route::post('/logout', [LoginController::class, 'logout']);
+
+    Route::get('/contact-messages', [ContactMessageController::class, 'index']);
+    Route::get('/conversations', [ConversationController::class, 'index']);
+    Route::post('/conversations', [ConversationController::class, 'store']);
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+});
 
 Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']);
@@ -62,6 +77,11 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/contact-messages', [AdminContactMessageController::class, 'index']);
         Route::get('/contact-messages/{contactMessage}', [AdminContactMessageController::class, 'show']);
+        Route::post('/contact-messages/{contactMessage}/reply', [AdminContactMessageController::class, 'reply']);
         Route::delete('/contact-messages/{contactMessage}', [AdminContactMessageController::class, 'destroy']);
+
+        Route::get('/conversations', [AdminConversationController::class, 'index']);
+        Route::get('/conversations/{conversation}', [AdminConversationController::class, 'show']);
+        Route::post('/conversations/{conversation}/messages', [AdminConversationController::class, 'sendMessage']);
     });
 });
