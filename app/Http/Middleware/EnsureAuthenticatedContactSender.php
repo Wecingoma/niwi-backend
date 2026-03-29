@@ -19,7 +19,7 @@ class EnsureAuthenticatedContactSender
             ], 401);
         }
 
-        if ($user->role !== User::ROLE_USER) {
+        if ($user->role === User::ROLE_ADMIN) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);

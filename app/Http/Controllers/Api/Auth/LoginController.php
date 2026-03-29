@@ -25,9 +25,15 @@ class LoginController extends Controller
         if (
             ! $user
             || ! Hash::check($validated['password'], $user->password)
-            || $user->role !== User::ROLE_USER
+            || $user->role === User::ROLE_ADMIN
         ) {
             return response()->json(['message' => 'Mot de passe incorrect.'], 422);
+        }
+
+        if (! $user->role) {
+            $user->update([
+                'role' => User::ROLE_USER,
+            ]);
         }
 
         $token = $user->createToken('user')->plainTextToken;
